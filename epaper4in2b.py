@@ -110,7 +110,7 @@ class EPD:
         self._command(PANEL_SETTING, b'\x0F') # LUT from OTP
 
     def wait_until_idle(self):
-        while self.busy.value() == 1:
+        while self.busy.value() == 0:  # 0=busy, 1=idle
             sleep_ms(100)
 
     def reset(self):

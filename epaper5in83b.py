@@ -117,7 +117,7 @@ class EPD:
         self._command(FLASH_MODE, b'\x03')
 
     def wait_until_idle(self):
-        while self.busy.value() == 0:
+        while self.busy.value() == 0:  # 0=busy, 1=idle
             sleep_ms(100)
 
     def reset(self):

@@ -119,7 +119,7 @@ class EPD:
         self._command(PLL_CONTROL, b'\x3C') # 3A 100HZ   29 150Hz 39 200HZ  31 171HZ
 
     def wait_until_idle(self):
-        while self.busy.value() == 1:
+        while self.busy.value() == 0:  # 0=busy, 1=idle
             sleep_ms(100)
 
     def reset(self):

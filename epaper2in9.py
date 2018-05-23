@@ -104,7 +104,7 @@ class EPD:
         self.set_lut(self.LUT_FULL_UPDATE)
 
     def wait_until_idle(self):
-        while self.busy.value() == 1:
+        while self.busy.value() == 1:  # 0=idle, 1=busy
             sleep_ms(100)
 
     def reset(self):
