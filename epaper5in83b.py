@@ -112,7 +112,7 @@ class EPD:
         self._command(TEMPERATURE_CALIBRATION, b'\x00')
         self._command(VCOM_AND_DATA_INTERVAL_SETTING, b'\x77')
         self._command(TCON_SETTING, b'\x22')
-        self._command(TCON_RESOLUTION, b'\x02\x58\x01\xC0') # 0x02 = source 600, 0x01 = gate 448
+        self._command(TCON_RESOLUTION, ustruct.pack(">HH", EPD_WIDTH, EPD_HEIGHT))
         self._command(VCM_DC_SETTING, b'\x20') # decide by LUT file
         self._command(FLASH_MODE, b'\x03')
 
@@ -130,7 +130,7 @@ class EPD:
     def display_frame(self, frame_buffer_black, frame_buffer_red):
         if (frame_buffer != None and frame_buffer_red != None):
             self._command(DATA_START_TRANSMISSION_1)
-            for i in range(0, self.width // 8 * self.height):
+            for i in range(0, self.width * self.height // 8):
                 temp1 = frame_buffer_black[i]
                 temp2 = frame_buffer_red[i]
                 j = 0

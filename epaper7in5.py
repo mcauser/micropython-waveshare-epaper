@@ -129,7 +129,7 @@ class EPD:
     # draw the current frame memory
     def display_frame(self, frame_buffer):
         self._command(DATA_START_TRANSMISSION_1)
-        for i in range(0, 30720):
+        for i in range(0, self.width * self.height // 8):
             temp1 = frame_buffer[i]
             j = 0
             while (j < 8):
