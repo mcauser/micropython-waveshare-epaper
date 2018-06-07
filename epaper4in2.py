@@ -74,6 +74,8 @@ VCM_DC_SETTING                 = const(0x82)
 #READ_OTP                       = const(0xA2)
 #POWER_SAVING                   = const(0xE3)
 
+BUSY = const(0)  # 0=busy, 1=idle
+
 class EPD:
     def __init__(self, spi, cs, dc, rst, busy):
         self.spi = spi
@@ -119,7 +121,7 @@ class EPD:
         self._command(PLL_CONTROL, b'\x3C') # 3A 100HZ   29 150Hz 39 200HZ  31 171HZ
 
     def wait_until_idle(self):
-        while self.busy.value() == 0:  # 0=busy, 1=idle
+        while self.busy.value() == BUSY:
             sleep_ms(100)
 
     def reset(self):

@@ -74,6 +74,8 @@ VCOM_AND_DATA_INTERVAL_SETTING = const(0x50)
 #READ_OTP_DATA                  = const(0xA2)
 #POWER_SAVING                   = const(0xE3)
 
+BUSY = const(0)  # 0=busy, 1=idle
+
 class EPD:
     def __init__(self, spi, cs, dc, rst, busy):
         self.spi = spi
@@ -110,7 +112,7 @@ class EPD:
         self._command(PANEL_SETTING, b'\x0F') # LUT from OTP
 
     def wait_until_idle(self):
-        while self.busy.value() == 0:  # 0=busy, 1=idle
+        while self.busy.value() == BUSY:
             sleep_ms(100)
 
     def reset(self):

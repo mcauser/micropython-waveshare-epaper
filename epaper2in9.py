@@ -56,6 +56,8 @@ SET_RAM_X_ADDRESS_COUNTER            = const(0x4E)
 SET_RAM_Y_ADDRESS_COUNTER            = const(0x4F)
 TERMINATE_FRAME_READ_WRITE           = const(0xFF)
 
+BUSY = const(1)  # 1=busy, 0=idle
+
 class EPD:
     def __init__(self, spi, cs, dc, rst, busy):
         self.spi = spi
@@ -104,7 +106,7 @@ class EPD:
         self.set_lut(self.LUT_FULL_UPDATE)
 
     def wait_until_idle(self):
-        while self.busy.value() == 1:  # 0=idle, 1=busy
+        while self.busy.value() == BUSY:
             sleep_ms(100)
 
     def reset(self):

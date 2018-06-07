@@ -75,6 +75,8 @@ ROTATE_90  = const(1)
 ROTATE_180 = const(2)
 ROTATE_270 = const(3)
 
+BUSY = const(0)  # 0=busy, 1=idle
+
 class EPD:
     def __init__(self, spi, cs, dc, rst, busy):
         self.spi = spi
@@ -115,7 +117,7 @@ class EPD:
         self._command(VCM_DC_SETTING_REGISTER, b'\x0A')
 
     def wait_until_idle(self):
-        while self.busy.value() == 0:  # 0=busy, 1=idle
+        while self.busy.value() == BUSY:
             sleep_ms(100)
 
     def reset(self):

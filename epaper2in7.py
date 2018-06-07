@@ -72,6 +72,8 @@ VCM_DC_SETTING_REGISTER           = const(0x82)
 #READ_OTP_DATA                     = const(0xA2)
 POWER_OPTIMIZATION                = const(0xF8) # Power optimization in flow diagram
 
+BUSY = const(0)  # 0=busy, 1=idle
+
 class EPD:
     def __init__(self, spi, cs, dc, rst, busy):
         self.spi = spi
@@ -127,7 +129,7 @@ class EPD:
         self.set_lut()
 
     def wait_until_idle(self):
-        while self.busy.value() == 0:  # 0=busy, 1=idle
+        while self.busy.value() == BUSY:
             sleep_ms(100)
 
     def reset(self):
