@@ -98,18 +98,18 @@ class EPD:
     LUT_WB    = LUT_BB
 
     def _command(self, command, data=None):
-        self.dc.value(0)
-        self.cs.value(0)
+        self.dc(0)
+        self.cs(0)
         self.spi.write(bytearray([command]))
-        self.cs.value(1)
+        self.cs(1)
         if data is not None:
             self._data(data)
 
     def _data(self, data):
-        self.dc.value(1)
-        self.cs.value(0)
+        self.dc(1)
+        self.cs(0)
         self.spi.write(data)
-        self.cs.value(1)
+        self.cs(1)
 
     def init(self):
         self.reset()
@@ -125,9 +125,9 @@ class EPD:
             sleep_ms(100)
 
     def reset(self):
-        self.rst.value(0)
+        self.rst(0)
         sleep_ms(200)
-        self.rst.value(1)
+        self.rst(1)
         sleep_ms(200)
 
     def set_lut(self):

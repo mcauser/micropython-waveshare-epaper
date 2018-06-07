@@ -91,18 +91,18 @@ class EPD:
         self.height = EPD_HEIGHT
 
     def _command(self, command, data=None):
-        self.dc.low()
-        self.cs.low()
+        self.dc(0)
+        self.cs(0)
         self.spi.write(bytearray([command]))
-        self.cs.high()
+        self.cs(1)
         if data is not None:
             self._data(data)
 
     def _data(self, data):
-        self.dc.high()
-        self.cs.low()
+        self.dc(1)
+        self.cs(0)
         self.spi.write(data)
-        self.cs.high()
+        self.cs(1)
 
     def init(self):
         self.reset()
@@ -116,9 +116,9 @@ class EPD:
             sleep_ms(100)
 
     def reset(self):
-        self.rst.low()
+        self.rst(0)
         sleep_ms(200)
-        self.rst.high()
+        self.rst(1)
         sleep_ms(200)
 
     # draw the current frame memory

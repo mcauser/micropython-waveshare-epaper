@@ -105,18 +105,18 @@ class EPD:
     LUT_WB      = bytearray(b'\x90\x1A\x1A\x00\x00\x01\x20\x0A\x0A\x00\x00\x08\x84\x0E\x01\x0E\x01\x10\x10\x0A\x0A\x00\x00\x08\x00\x04\x10\x00\x00\x05\x00\x03\x0E\x00\x00\x0A\x00\x23\x00\x00\x00\x01') # R24H b
 
     def _command(self, command, data=None):
-        self.dc.low()
-        self.cs.low()
+        self.dc(0)
+        self.cs(0)
         self.spi.write(bytearray([command]))
-        self.cs.high()
+        self.cs(1)
         if data is not None:
             self._data(data)
 
     def _data(self, data):
-        self.dc.high()
-        self.cs.low()
+        self.dc(1)
+        self.cs(0)
         self.spi.write(data)
-        self.cs.high()
+        self.cs(1)
 
     def init(self):
         self.reset()
@@ -141,9 +141,9 @@ class EPD:
             sleep_ms(100)
 
     def reset(self):
-        self.rst.low()
+        self.rst(0)
         sleep_ms(200)
-        self.rst.high()
+        self.rst(1)
         sleep_ms(200)
 
     def set_lut(self):

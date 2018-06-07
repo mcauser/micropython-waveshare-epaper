@@ -76,18 +76,18 @@ class EPD:
     LUT_PARTIAL_UPDATE = bytearray(b'\x10\x18\x18\x08\x18\x18\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x13\x14\x44\x12\x00\x00\x00\x00\x00\x00')
 
     def _command(self, command, data=None):
-        self.dc.low()
-        self.cs.low()
+        self.dc(0)
+        self.cs(0)
         self.spi.write(bytearray([command]))
-        self.cs.high()
+        self.cs(1)
         if data is not None:
             self._data(data)
 
     def _data(self, data):
-        self.dc.high()
-        self.cs.low()
+        self.dc(1)
+        self.cs(0)
         self.spi.write(data)
-        self.cs.high()
+        self.cs(1)
 
     def init(self):
         self.reset()
@@ -107,9 +107,9 @@ class EPD:
             sleep_ms(100)
 
     def reset(self):
-        self.rst.low()
+        self.rst(0)
         sleep_ms(200)
-        self.rst.high()
+        self.rst(1)
         sleep_ms(200)
 
     def set_lut(self, lut):
