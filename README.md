@@ -33,3 +33,7 @@ MicroPython drivers for various Waveshare e-Paper displays, based on the origina
 * [Waveshare Wiki](https://www.waveshare.com/wiki/Main_Page)
 * [micropython.org](http://micropython.org)
 * [Docs on framebuf](http://docs.micropython.org/en/latest/pyboard/library/framebuf.html)
+
+## License
+
+Licensed under the [MIT License](http://opensource.org/licenses/MIT).
