@@ -285,14 +285,22 @@ class EPD:
                 self.send_data(bytearray([color]))
         self.update_display()
 
-    def sleep(self, mode):
+    def set_sleep_mode(self, mode):
+        self.sleep_mode = mode
+
+    def sleep(self):
+        print("Going into sleep %d" % self.sleep_mode)
         self.wait_display()
         self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\xc3') #POWER OFF
         self.send_command(MASTER_ACTIVATION)
 
-        self.send_command(DEEP_SLEEP_MODE, bytearray([mode])) #enter deep sleep
+        self.send_command(DEEP_SLEEP_MODE, bytearray([self.sleep_mode]))
         sleep_ms(100)
+        self.rst(0)
 
+    def wakeup(self):
+        print("wakeup")
+        self.init()
 ### END OF FILE ###
 
 
