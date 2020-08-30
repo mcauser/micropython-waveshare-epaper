@@ -27,7 +27,7 @@ from time import sleep_ms
 from machine import Pin
 
 # Display resolution
-EPD_WIDTH       = 122
+EPD_WIDTH       = 128
 EPD_HEIGHT      = 250
 # datasheet says 250x122 (increased to 128 to be multiples of 8)
 
@@ -41,8 +41,10 @@ SW_RESET                             = const(0x12)
 MASTER_ACTIVATION                    = const(0x20)
 DISPLAY_UPDATE_CONTROL_2             = const(0x22)
 WRITE_RAM                            = const(0x24)
+WRITE_RAM2                           = const(0x26)
 WRITE_VCOM_REGISTER                  = const(0x2C)
 WRITE_LUT_REGISTER                   = const(0x32)
+WRITE_OTP_SELECTION                  = const(0x37)
 SET_DUMMY_LINE_PERIOD                = const(0x3A)
 SET_GATE_LINE_WIDTH                  = const(0x3B)
 BORDER_WAVEFORM_CONTROL              = const(0x3C)
@@ -65,26 +67,10 @@ SLEEP_NORMAL                         = const(0x00) #Sleeps and keeps access to R
 SLEEP_MODE_1                         = const(0x01) #Sleeps without access to RAM/controller but keeps RAM content
 SLEEP_MODE_2                         = const(0x11) #Same as MODE_1 but RAM content is not kept
 
+FULL_UPDATE                          = const(0x00)
+PART_UPDATE                          = const(0x01)
+
 class EPD:
-    def __init__(self, spi, cs, dc, rst, busy):
-        self.spi = spi
-        self.dc = dc
-        self.busy = busy
-        self.rst = rst
-        self.cs = cs
-        self.width = EPD_WIDTH
-        self.height = EPD_HEIGHT
-        self.sleep_mode = SLEEP_MODE_1
-
-        self.cs.init(self.cs.OUT, value=1)
-        self.dc.init(self.dc.OUT, value=0)
-        self.rst.init(self.rst.OUT, value=0)
-        self.busy.init(self.busy.IN)
-
-
-    FULL_UPDATE = 0
-    PART_UPDATE = 1
-
     lut_full_update= [
         0x80,0x60,0x40,0x00,0x00,0x00,0x00,             #LUT0: BB:     VS 0 ~7
         0x10,0x60,0x20,0x00,0x00,0x00,0x00,             #LUT1: BW:     VS 0 ~7
@@ -121,6 +107,22 @@ class EPD:
         0x15,0x41,0xA8,0x32,0x30,0x0A,
     ]
 
+    def __init__(self, spi, cs, dc, rst, busy):
+        self.spi = spi
+        self.dc = dc
+        self.busy = busy
+        self.rst = rst
+        self.cs = cs
+        self.width = EPD_WIDTH
+        self.height = EPD_HEIGHT
+        self.sleep_mode = SLEEP_MODE_1
+        self.update_mode = FULL_UPDATE
+
+        self.cs.init(self.cs.OUT, value=1)
+        self.dc.init(self.dc.OUT, value=0)
+        self.rst.init(self.rst.OUT, value=0)
+        self.busy.init(self.busy.IN)
+
     # Hardware reset
     def reset_display(self):
         self.rst(1)
@@ -152,19 +154,24 @@ class EPD:
             sleep_ms(100)
 
     def update_display(self):
-        self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\xc7')
+        if self.update_mode == FULL_UPDATE:
+            self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\xc7')
+        else:
+            self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\x0c')
         self.send_command(MASTER_ACTIVATION)
         self.wait_display()
 
-    def update_display_partial(self):
-        self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\x0c')
-        self.send_command(MASTER_ACTIVATION)
-        self.wait_display()
+    def set_partial_update_mode(self):
+        self.update_mode = PART_UPDATE
 
-    def init(self, update):
+    def set_full_update_mode(self):
+        self.update_mode = FULL_UPDATE
+
+    def init(self):
         # EPD hardware init start
         self.reset_display()
-        if (update == self.FULL_UPDATE):
+        if (self.update_mode == FULL_UPDATE):
+            print("Init full update")
             self.wait_display()
             self.send_command(SW_RESET) # soft reset
             self.wait_display()
@@ -199,16 +206,15 @@ class EPD:
 
             self.wait_display()
         else:
+            print("Init partial update")
             self.send_command(WRITE_VCOM_REGISTER, b'\x26')     #VCOM Voltage
             self.wait_display()
 
             self.set_lut(self.lut_partial_update)
-
-            self.send_command(0x37, b'\x00\x00\x00\x00\x40\x00\x00')
-            self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\xc0')
+            self.send_command(WRITE_OTP_SELECTION, bytearray([0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00]))
+            self.send_command(DISPLAY_UPDATE_CONTROL_2, b'\xc0') # DISPLAY_OUT_CTRL_2
             self.send_command(MASTER_ACTIVATION)
             self.wait_display()
-
             self.send_command(BORDER_WAVEFORM_CONTROL, b'\x01') #BorderWavefrom
         return 0
 
@@ -225,63 +231,48 @@ class EPD:
         self.send_command(SET_RAM_Y_ADDRESS_COUNTER, ustruct.pack("<H", y))
         self.wait_display()
 
+    def write_image_data(self, image):
+        for i in range(0, self.height * self.width // 8):
+                self.send_data(bytearray([image[i]]))
+
     def display(self, image):
         print("Display buffer")
-        if self.width % 8 == 0:
-            linewidth = self.width / 8
-        else:
-            linewidth = self.width // 8 + 1
         self.set_memory_area(0, 0, self.width - 1 , self.height - 1)
         self.set_memory_pointer(0, 0)
         self.send_command(WRITE_RAM)
-        for i in range(0, self.height * self.width // 8):
-            self.send_data(bytearray([image[i]]))
+        self.write_image_data(image)
         self.update_display()
 
-    def display_partial(self, image):
-        if self.width % 8 == 0:
-            linewidth = self.width / 8
-        else:
-            linewidth = self.width // 8 + 1
+    def display_master_image(self, image):
+        """This will fill the 2 controllers buffers with the same
+        image as the base for the following update. Then each time 
+        we update the main buffer, controller will only update pixels
+        that changed. The controller will then use new picture as base.
+        Setting up the 2 buffers requires being in full update mode until
+        updating display with base image. Then update mode shall be
+        switched to partial update.
+        Note: this is my interpretiation of the way the controller works
+        in partial update mode. I have no documentation about this. """
+        if self.update_display == PART_UPDATE:
+            print("Setup of partial update requires being in full update mode first")
+            return
+
+        print("Initializing partial update buffers")
 
         self.send_command(WRITE_RAM)
-        for j in range(0, self.height):
-            for i in range(0, linewidth):
-                self.send_data(bytearray([image[i + (j * linewidth)]]))
+        self.write_image_data(image)
 
-        # self.send_command(0x26)
-        # for j in range(0, self.height):
-            # for i in range(0, linewidth):
-                # self.send_data(~image[i + j * linewidth])
-        self.update_display_partial()
+        self.send_command(WRITE_RAM2)
+        self.write_image_data(image)
 
-    def displayPartBaseImage(self, image):
-        if self.width % 8 == 0:
-            linewidth = self.width / 8
-        else:
-            linewidth = self.width // 8 + 1
-
-        self.send_command(WRITE_RAM)
-        for j in range(0, self.height):
-            for i in range(0, linewidth):
-                self.send_data(bytearray([image[i + j * linewidth]]))
-
-
-        self.send_command(0x26)
-        for j in range(0, self.height):
-            for i in range(0, linewidth):
-                self.send_data(bytearray([image[i + j * linewidth]]))
         self.update_display()
 
     def clear_display(self, color):
         print("Clear display")
-        if self.width % 8 == 0:
-            linewidth = self.width / 8
-        else:
-            linewidth = self.width // 8 + 1
-
+        self.set_memory_area(0, 0, self.width - 1 , self.height - 1)
+        self.set_memory_pointer(0, 0)
         self.send_command(WRITE_RAM)
-        for j in range(0, self.height * linewidth // 8):
+        for i in range(0, self.height * self.width // 8):
                 self.send_data(bytearray([color]))
         self.update_display()
 
