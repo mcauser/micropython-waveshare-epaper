@@ -12,14 +12,15 @@ rst = Pin(4)
 busy = Pin(10)
 
 e = epaper2in13v2.EPD(hsspi, cs, dc, rst, busy)
-e.init(e.FULL_UPDATE)
+e.init()
 
 h = 250
-w = 122
+w = 128 # actually it is 122 but better to be a multiple of 8
 x = 0
 y = 0
 
 # --------------------
+e.clear_display(0xff)
 
 import framebuf
 buf = bytearray(w * h // 8)
@@ -27,18 +28,8 @@ fb = framebuf.FrameBuffer(buf, w, h, framebuf.MONO_HLSB)
 black = 0
 white = 1
 fb.fill(white)
-fb.text('Hello World',20, 60, black)
-#fb.pixel(30, 10, black)
-#fb.hline(30, 30, 10, black)
-#fb.vline(30, 50, 10, black)
-#fb.line(30, 70, 40, 80, black)
-#fb.rect(30, 90, 10, 10, black)
-#fb.fill_rect(20, 0, 10, 10, black)
-#for row in range(0,37):
-#	fb.text(str(row),0,row*8,black)
-#fb.text('Line 36',0,288,black)
-#fb.text('text2',30, 110, black)
-
+fb.fill_rect(2, 2, 118, 248, black)
+fb.text('Hello World',20, 60, white)
 fb.text('00', 0, 00, black)
 fb.text('20', 0, 20, black)
 fb.text('40', 0, 40, black)
