@@ -33,8 +33,12 @@ sleep_ms(2000)  # wait for 2 seconds before doing a partial update
 
 e.init(e.PART_UPDATE)
 
-fb.fill(0)
-for i in range(0,122/2-1,2):
-    fb.rect(i, y_start+i, 250-i*2, 122-i*2, 0xffff)
-e.set_frame_memory(buf,0,0,e.width,e.height)
+fb = framebuf.FrameBuffer(buf, 200, 32, framebuf.MONO_VLSB)
+fb.fill(0x0)
+for i in range(0,32/2-1,2):
+    fb.rect(i, i, 200-i*2, 32-i*2, 0xffff)
+
+e.set_frame_memory(buf,8,32,32,200) # 8px from bottom, 25px from left
+
 e.display_frame()
+

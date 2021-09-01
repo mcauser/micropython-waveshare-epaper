@@ -1,6 +1,7 @@
 """
 MicroPython Waveshare 2.13" V2 Black/White GDEH0213B72/HINK-E0213A22-A0 e-paper display driver
 https://github.com/mcauser/micropython-waveshare-epaper
+https://www.good-display.com/product/2.13-inch-e-ink-screen-panel-partial-refresh,-GDEH0213B72-218.html
 
 MIT License
 Copyright (c) 2017 Waveshare
@@ -117,7 +118,7 @@ class EPD:
             self._data(bytearray([((EPD_HEIGHT - 1) >> 8) & 0xFF]))
             self._data(bytearray([0x00])) # GD = 0 SM = 0 TB = 0
 
-            self._command(DATA_ENTRY_MODE_SETTING, b'\x01') #data entry mode
+            self._command(DATA_ENTRY_MODE_SETTING, b'\x01') #data entry mode. X+, Y- from bottom left in landscape
 
             self._command(BORDER_WAVEFORM_CONTROL, b'\x03') #BorderWavefrom
 
@@ -179,13 +180,13 @@ class EPD:
         # Similarly, the memory pointer needs y_end
         self.set_memory_pointer(x, y_end)
         if (self.update == self.FULL_UPDATE):
-            self.display_landscape(image, WRITE_RAM)
+            self.display_landscape(image, WRITE_RAM,w,h)
         else:
-            self.display_landscape(image, WRITE_RAM)
-            self.display_landscape(image, WRITE_RAM_2)
+            self.display_landscape(image, WRITE_RAM,w,h)
+            self.display_landscape(image, WRITE_RAM_2,w,h)
 
 
-    def display_landscape(self,buf,write_cmd):
+    def display_landscape(self,buf,write_cmd,w,h):
         # Display in Landscape.
         # To do a partial update:
         # epd.display_landscape(buf,WRITE_RAM)
@@ -196,19 +197,19 @@ class EPD:
         mvb = memoryview(buf)
         cmd = self._command
         dat = self._data
-        wid = self.height
-        tbc = self.width // 8  # Vertical bytes per column
-        iidx = len(mvb)-1 # start at the end of the buffer
+        wid = h
+        tbc = w // 8  # Vertical bytes per column
+        iidx = wid * tbc - 1 # start at the end of the buffer
         #iidx -= wid #skip bottom 8 lines
         idx = iidx  # Index into framebuf
         vbc = 0  # Current vertical byte count
         hpc = 0  # Horizontal pixel count
         cmd(write_cmd)
-        for i in range(len(mvb)):
+        for i in range(wid * tbc):
             if (write_cmd == WRITE_RAM):
                 buf1[0] = ~mvb[idx]
             else:
-                buf1[0] = mvb[idx]
+                buf1[0] = mvb[idx]  # GDEH0213B72 docs says RAM_2 is for red colour but it appears to need to be set to inverse of RAM_1 for partial update to work
             dat(buf1)
             idx -= wid    # up one line
             vbc += 1
@@ -220,7 +221,7 @@ class EPD:
     # replace the frame memory with the specified color
     def clear_frame_memory(self, color):
         self.set_memory_area(0, self.height-1, self.width-1, 0)
-        self.set_memory_pointer(0, 0)
+        self.set_memory_pointer(0, self.height-1)
         self._command(WRITE_RAM)
         # send the color data
         for i in range(0, self.width // 8 * self.height):
@@ -251,6 +252,9 @@ class EPD:
 
     # to wake call reset() or init()
     def sleep(self):
-        self._command(DEEP_SLEEP_MODE)
+        self._command(DISPLAY_UPDATE_CONTROL_2, b'\xC3')
+        self._command(MASTER_ACTIVATION)
+
+        self._command(DEEP_SLEEP_MODE,b'\x01')
         self.wait_until_idle()
 
